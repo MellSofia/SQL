@@ -1,0 +1,123 @@
+CREATE TABLE Departments (
+    Id int IDENTITY(1,1) primary key not null,
+    Name NVARCHAR(100) not null CHECK (LEN(Name) > 0) UNIQUE
+);
+
+CREATE TABLE Doctors (
+    Id int IDENTITY(1,1) primary key not null,
+    Name NVARCHAR(max) not null CHECK (LEN(Name) > 0),
+    Premium money not null CHECK (Premium >= 0) default (0),
+    Salary money not null CHECK (Salary > 0),
+    Surname NVARCHAR(max) not null CHECK (LEN(Surname) > 0)
+);
+
+CREATE TABLE Vacations (
+    Id int IDENTITY(1,1) primary key not null,
+    StartDate date NOT NULL,
+    EndDate date NOT NULL,
+    CHECK (EndDate > StartDate),
+    DoctorId int not null,
+    foreign key (DoctorId) references Doctors(Id)
+);
+
+CREATE TABLE Specializations (
+    Id int IDENTITY(1,1) primary key not null,
+    Name NVARCHAR(100) not null CHECK (LEN(Name) > 0) UNIQUE
+);
+
+CREATE TABLE DoctorsSpecializations (
+    Id int IDENTITY(1,1) primary key not null,
+    DoctorId int not null,
+    SpecializationId int not null,
+    foreign key (DoctorId) references Doctors(Id),
+    foreign key (SpecializationId) references Specializations(Id)
+);
+
+CREATE TABLE Sponsors (
+    Id int IDENTITY(1,1) primary key not null,
+    Name NVARCHAR(100) not null CHECK (LEN(Name) > 0) UNIQUE
+);
+
+CREATE TABLE Donations (
+    Id int IDENTITY(1,1) primary key not null,
+    Amount money not null CHECK (Amount > 0),
+    Data date not null default GETDATE() CHECK (Data <= GETDATE()),
+    DepartmentId int not null,
+    SponsorId int not null,
+    foreign key (DepartmentId) references Departments(Id),
+    foreign key (SponsorId) references Sponsors(Id)
+);
+
+CREATE TABLE Wards (
+    Id int IDENTITY(1,1) primary key not null,
+    Name NVARCHAR(20) not null CHECK (LEN(Name) > 0) UNIQUE,
+    DepartmentId int not null,
+    foreign key (DepartmentId) references Departments(Id)
+);
+
+INSERT INTO Departments (Name) VALUES 
+('Cardiology'),
+('Neurology'),
+('Intensive Treatment');
+
+INSERT INTO Specializations (Name) VALUES 
+('Cardiologist'),
+('Neurologist'),
+('Pediatrician');
+
+INSERT INTO Doctors (Name, Surname, Salary, Premium) VALUES 
+('John', 'Doe', 5000, 500),
+('Jane', 'Smith', 6000, 600),
+('Emily', 'Johnson', 5500, 550);
+
+INSERT INTO Wards (Name, DepartmentId) VALUES 
+('Ward A', 1),
+('Ward B', 2),
+('Ward C', 3);
+
+INSERT INTO Sponsors (Name) VALUES 
+('Health Corp'),
+('Wellness Inc'),
+('Care Foundation');
+
+INSERT INTO Donations (Amount, Data, DepartmentId, SponsorId) VALUES 
+(15000, GETDATE(), 1, 1),
+(20000, GETDATE(), 2, 2),
+(25000, GETDATE(), 3, 3);
+
+INSERT INTO Vacations (StartDate, EndDate, DoctorId) VALUES 
+('2024-11-01', '2024-11-10', 1),
+('2024-11-05', '2024-11-15', 2),
+('2024-11-10', '2024-11-20', 3);
+
+INSERT INTO DoctorsSpecializations (DoctorId, SpecializationId) VALUES 
+(1, 1),
+(2, 2),
+(3, 3);
+
+--1 Вывести полные имена врачей и их специализации.
+SELECT Doctors.Name + " " + Doctors.Surname AS Doctors, Specializations.Name AS Specializations 
+FROM Doctors, Specializations, DoctorsSpecializations WHERE Doctors.Id = DoctorsSpecializations.DoctorId and 
+Specializations.Id = DoctorsSpecializations.SpecializationId; 
+--2 Вывести фамилии и зарплаты (сумма ставки и надбавки) врачей, которые не находятся в отпуске.
+SELECT Doctors.Name, (Doctors.Salary+Doctors.Premium) AS TotalSalary FROM Doctors WHERE 
+Doctors.Id NOT IN (SELECT DoctorId FROM Vacations WHERE StartDate <= GETDATE() AND EndDate >= GETDATE());
+--3 Вывести названия палат, которые находятся в отделении “Intensive Treatment”.
+SELECT Wards.Name From Wards, Departments WHERE Wards.DepartmentId = Departments.Id and Departments.Name = "Intensive Treatment";
+--4 Вывести названия отделений без повторений, которые спонсируются компанией “Umbrella Corporation”.
+
+--5 Вывести все пожертвования за последний месяц в виде: отделение, спонсор, сумма пожертвования, дата пожертвования.
+
+--6 Вывести фамилии врачей с указанием отделений, в которых они проводят обследования. Необходимо учитывать обследования, проводимые только в будние дни.
+
+--7 Вывести названия палат и корпуса отделений, в которыхпроводит обследования врач “Helen Williams”.
+
+--8 Вывести названия отделений, которые получали пожертвование в размере больше 100000, с указанием их врачей.
+
+--9 Вывести названия отделений, в которых есть врачи не получающие надбавки.
+
+--10 Вывести названия специализаций, которые используются для лечения заболеваний со степенью тяжести выше 3.
+
+--11 Вывести названия отделений и заболеваний, обследования по которым они проводили за последние полгода.
+
+--12 Вывести названия отделений и палат, в которых проводились обследования по заразительным заболеваниям
