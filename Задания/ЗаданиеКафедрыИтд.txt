@@ -1,0 +1,59 @@
+-- create
+CREATE TABLE Departments (
+  Id int identity(1,1) not null primary key,
+  Financing money not null CHECK(Financing >= 0) default(0),
+  Name nvarchar(100) not null CHECK(Len(Name) > 0) unique
+);
+
+CREATE TABLE Faculties (
+  Id int identity(1,1) not null primary key,
+  Dean nvarchar(max) not null CHECK(Len(Dean) > 0),
+  Name nvarchar(100) not null unique CHECK(Len(Name) > 0)
+);
+
+CREATE TABLE Groups (
+  Id int identity(1,1) not null primary key,
+  Name nvarchar(10) not null unique CHECK(Len(Name) > 0),
+  Rating int not null CHECK(Rating >= 0 and Rating <= 5),
+  Year int not null CHECK(Year >= 1 and Year <= 5)
+);
+
+CREATE TABLE Teachers (
+  Id int identity(1,1) not null primary key,
+  EmploymentDate date not null CHECK(EmploymentDate >= '1991-01-01'), 
+  IsAssistant bit not null default(0),  
+  IsProfessor bit not null default(0),
+  Name nvarchar(max) not null CHECK(Len(Name) > 0), 
+  Position nvarchar(max) not null CHECK(Len(Position) > 0),
+  Premium money not null CHECK(Premium >= 0) default(0),
+  Salary money not null CHECK(Salary > 0),
+  Surname nvarchar(max) not null CHECK(Len(Surname) > 0)
+);
+
+-- insert
+INSERT Into Departments (Financing, Name) VALUES (10000, 'DEP1'), (15000, 'DEP2'), (30000, 'DEP3');
+
+INSERT INTO Faculties(Dean, Name) VALUES ('DEAN1', 'Computer Science'), ('DEAN2', 'Name2'), ('DEAN3', 'Name3');
+
+INSERT INTO Teachers (EmploymentDate, IsAssistant, IsProfessor, Name, Position, Premium, Salary, Surname) VALUES 
+('2015-01-15', 0, 1, 'Petr', 'Senior Lecturer', 500, 70000, 'Petrov'),
+('2019-03-10', 1, 0, 'Anna', 'Assistant', 300, 50000, 'Sidorova'), 
+('2018-04-20', 1, 0, 'Ivan', 'Junior Assistant', 200, 40000, 'Ivanov');
+
+--1
+SELECT Name, Financing, Id FROM Departments;
+
+--6
+SELECT Name FROM Departments WHERE Financing < 11000 OR Financing > 25000;
+
+--7 
+SELECT Name FROM Faculties WHERE Name != 'Computer Science';
+
+--8
+SELECT Surname, Position FROM Teachers WHERE IsProfessor = 0;
+
+--9
+SELECT Surname, Position, Salary, Premium FROM Teachers WHERE IsAssistant = 1 AND Premium BETWEEN 160 AND 550; 
+
+--10
+SELECT Surname, Salary FROM Teachers WHERE IsAssistant = 1;
