@@ -58,32 +58,40 @@ CREATE TABLE Wards (
 INSERT INTO Departments (Name) VALUES 
 ('Cardiology'),
 ('Neurology'),
-('Intensive Treatment');
+('Intensive Treatment'),
+('Pediatrics');
 
 INSERT INTO Specializations (Name) VALUES 
 ('Cardiologist'),
 ('Neurologist'),
-('Pediatrician');
+('Pediatrician'),
+('Surgeon');
 
 INSERT INTO Doctors (Name, Surname, Salary, Premium) VALUES 
 ('John', 'Doe', 5000, 500),
 ('Jane', 'Smith', 6000, 600),
-('Emily', 'Johnson', 5500, 550);
+('Emily', 'Johnson', 5500, 550),
+('Helen', 'Williams', 7000, 700);
 
 INSERT INTO Wards (Name, DepartmentId) VALUES 
 ('Ward A', 1),
 ('Ward B', 2),
-('Ward C', 3);
+('Ward C', 3),
+('Ward D', 4);
 
 INSERT INTO Sponsors (Name) VALUES 
 ('Health Corp'),
 ('Wellness Inc'),
-('Care Foundation');
+('Care Foundation'),
+('Umbrella Corporation');
 
 INSERT INTO Donations (Amount, Data, DepartmentId, SponsorId) VALUES 
 (15000, GETDATE(), 1, 1),
 (20000, GETDATE(), 2, 2),
-(25000, GETDATE(), 3, 3);
+(25000, GETDATE(), 3, 3),
+(30000, GETDATE(), 4, 4),
+(18000, DATEADD(day, -15, GETDATE()), 1, 4),
+(220000, DATEADD(day, -10, GETDATE()), 2, 4);
 
 INSERT INTO Vacations (StartDate, EndDate, DoctorId) VALUES 
 ('2024-11-01', '2024-11-10', 1),
@@ -93,26 +101,46 @@ INSERT INTO Vacations (StartDate, EndDate, DoctorId) VALUES
 INSERT INTO DoctorsSpecializations (DoctorId, SpecializationId) VALUES 
 (1, 1),
 (2, 2),
-(3, 3);
+(3, 3),
+(4, 4);
 
 --1 Вывести полные имена врачей и их специализации.
-SELECT Doctors.Name + " " + Doctors.Surname AS Doctors, Specializations.Name AS Specializations 
-FROM Doctors, Specializations, DoctorsSpecializations WHERE Doctors.Id = DoctorsSpecializations.DoctorId and 
-Specializations.Id = DoctorsSpecializations.SpecializationId; 
+--SELECT Doctors.Name + " " + Doctors.Surname AS Doctors, Specializations.Name AS Specializations 
+--FROM Doctors, Specializations, DoctorsSpecializations WHERE Doctors.Id = DoctorsSpecializations.DoctorId and 
+--Specializations.Id = DoctorsSpecializations.SpecializationId; 
+
 --2 Вывести фамилии и зарплаты (сумма ставки и надбавки) врачей, которые не находятся в отпуске.
-SELECT Doctors.Name, (Doctors.Salary+Doctors.Premium) AS TotalSalary FROM Doctors WHERE 
-Doctors.Id NOT IN (SELECT DoctorId FROM Vacations WHERE StartDate <= GETDATE() AND EndDate >= GETDATE());
+--SELECT Doctors.Name, (Doctors.Salary+Doctors.Premium) AS TotalSalary FROM Doctors WHERE 
+--Doctors.Id NOT IN (SELECT DoctorId FROM Vacations WHERE StartDate <= GETDATE() AND EndDate >= GETDATE());
+
 --3 Вывести названия палат, которые находятся в отделении “Intensive Treatment”.
-SELECT Wards.Name From Wards, Departments WHERE Wards.DepartmentId = Departments.Id and Departments.Name = "Intensive Treatment";
+--SELECT Wards.Name From Wards, Departments WHERE Wards.DepartmentId = Departments.Id and Departments.Name = "Intensive Treatment";
+
 --4 Вывести названия отделений без повторений, которые спонсируются компанией “Umbrella Corporation”.
+--SELECT Departments.Name FROM Departments, Donations, Sponsors 
+--WHERE Departments.Id=Donations.DepartmentId and Donations.SponsorId=Sponsors.Id 
+--and Sponsors.Name = 'Umbrella Corporation';
 
 --5 Вывести все пожертвования за последний месяц в виде: отделение, спонсор, сумма пожертвования, дата пожертвования.
+--SELECT Departments.Name, Sponsors.Name, Donations.Amount, Donations.Data 
+--FROM Donations, Departments, Sponsors WHERE Donations.DepartmentId = Departments.Id 
+--AND Donations.SponsorId = Sponsors.Id AND Donations.Data >= DATEADD(month, -1, GETDATE());
 
 --6 Вывести фамилии врачей с указанием отделений, в которых они проводят обследования. Необходимо учитывать обследования, проводимые только в будние дни.
+--SELECT Doctors.Surname, Departments.Name  FROM Doctors, Wards, Departments 
+--WHERE Wards.DepartmentId = Departments.Id AND Departments.Id = Doctors.Id
 
 --7 Вывести названия палат и корпуса отделений, в которыхпроводит обследования врач “Helen Williams”.
-
+--SELECT Wards.Name, Departments.Name FROM Wards, Departments, Doctors WHERE Wards.DepartmentId = Departments.Id 
+--AND Departments.Id = Doctors.Id AND Doctors.Name = 'Helen' AND Doctors.Surname = 'Williams';
+  
 --8 Вывести названия отделений, которые получали пожертвование в размере больше 100000, с указанием их врачей.
+SELECT  Departments.Name, Doctors.Surname
+FROM Donations, Doctors, Donations, Wards 
+WHERE Donations.DepartmentId = Departments.Id
+AND Departments.Id = Wards.DepartmentId
+AND Wards.Id = Doctors.Id 
+AND Donations.Amount > 100000;
 
 --9 Вывести названия отделений, в которых есть врачи не получающие надбавки.
 
