@@ -1,0 +1,198 @@
+CREATE TABLE Faculties (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Financing MONEY NOT NULL CHECK (Financing >= 0) DEFAULT 0,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE Curators (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Name NVARCHAR(MAX) NOT NULL,
+    Surname NVARCHAR(MAX) NOT NULL
+);
+
+CREATE TABLE Departments (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Financing MONEY NOT NULL CHECK (Financing >= 0) DEFAULT 0,
+    Name NVARCHAR(100) NOT NULL UNIQUE,
+    FacultyId INT NOT NULL,
+    FOREIGN KEY (FacultyId) REFERENCES Faculties(Id) -- 
+);
+
+CREATE TABLE Groups (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Name NVARCHAR(10) NOT NULL UNIQUE,
+    Year INT NOT NULL CHECK (Year BETWEEN 1 AND 5),
+    DepartmentId INT NOT NULL,
+    FOREIGN KEY (DepartmentId) REFERENCES Departments(Id) -- 
+);
+
+CREATE TABLE Teachers (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Name NVARCHAR(MAX) NOT NULL,
+    Salary MONEY NOT NULL CHECK (Salary > 0),
+    Surname NVARCHAR(MAX) NOT NULL
+);
+
+CREATE TABLE Subjects (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE Lectures (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    LectureRoom NVARCHAR(MAX) NOT NULL,
+    SubjectId INT NOT NULL,
+    TeacherId INT NOT NULL,
+    FOREIGN KEY (SubjectId) REFERENCES Subjects(Id), -- 
+    FOREIGN KEY (TeacherId) REFERENCES Teachers(Id)   -- 
+);
+
+CREATE TABLE GroupsCurators (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    CuratorId INT NOT NULL,
+    GroupId INT NOT NULL,
+    FOREIGN KEY (CuratorId) REFERENCES Curators(Id), -- 
+    FOREIGN KEY (GroupId) REFERENCES Groups(Id)      -- 
+);
+
+CREATE TABLE GroupsLectures (
+    Id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    GroupId INT NOT NULL,
+    LectureId INT NOT NULL,
+    FOREIGN KEY (GroupId) REFERENCES Groups(Id),     -- 
+    FOREIGN KEY (LectureId) REFERENCES Lectures(Id)  -- 
+);
+
+
+-- Вставка данных в таблицу Faculties
+INSERT INTO Faculties (Financing, Name) VALUES
+(100000, 'Computer Science'),
+(150000, 'Mathematics'),
+(120000, 'Physics');
+
+-- Вставка данных в таблицу Departments
+INSERT INTO Departments (Financing, Name, FacultyId) VALUES
+(50000, 'Software Engineering', 1),
+(60000, 'Data Science', 1),
+(70000, 'Pure Mathematics', 2),
+(55000, 'Applied Physics', 3);
+
+-- Вставка данных в таблицу Curators
+INSERT INTO Curators (Name, Surname) VALUES
+('Alice', 'Johnson'),
+('Bob', 'Smith'),
+('Bob2', 'Smith2'),
+('Charlie', 'Brown');
+
+-- Вставка данных в таблицу Teachers
+INSERT INTO Teachers (Name, Surname, Salary) VALUES
+('Samantha', 'Adams', 50000),
+('John', 'Doe', 55000),
+('Emily', 'Clark', 60000);
+
+-- Вставка данных в таблицу Subjects
+INSERT INTO Subjects (Name) VALUES
+('Database Theory'),
+('Algorithms'),
+('Machine Learning'),
+('Quantum Physics');
+
+-- Вставка данных в таблицу Lectures
+INSERT INTO Lectures (LectureRoom, SubjectId, TeacherId) VALUES
+('B103', 1, 1),
+('A201', 2, 2),
+('C305', 3, 3),
+('B103', 4, 1);
+
+-- Вставка данных в таблицу Groups
+INSERT INTO Groups (Name, Year, DepartmentId) VALUES
+('P107', 1, 1),
+('P108', 2, 1),
+('M101', 3, 2),
+('M102', 4, 2);
+
+-- Вставка данных в таблицу GroupsCurators
+INSERT INTO GroupsCurators (CuratorId, GroupId) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4);
+
+-- Вставка данных в таблицу GroupsLectures
+INSERT INTO GroupsLectures (GroupId, LectureId) VALUES
+(1, 1),
+(1, 2),
+(2, 3),
+(3, 4);
+
+--1
+--SELECT Teachers.Name , Teachers.Surname, Groups.Name FROM Teachers, Groups
+--SELECT Teachers.Name , Teachers.Surname, Groups.Name FROM Teachers, Groups
+--SELECT Teachers.Name, Teachers.Surname, 
+--       (
+--       SELECT STRING_AGG(Groups.Name, ', ' ) 
+--       FROM Groups)
+--FROM Teachers ;
+--2
+SELECT Faculties.Name
+FROM Faculties
+WHERE Id IN (
+    SELECT Departments.FacultyId
+    FROM Departments
+    WHERE Financing > (SELECT Financing FROM Faculties WHERE Id = Departments.FacultyId)
+);
+--3
+--SELECT Curators.Surname, Groups.Name
+--FROM Curators, GroupsCurators, Groups
+--WHERE GroupsCurators.CuratorId = Curators .Id
+--AND GroupsCurators.GroupId = Groups.Id;
+--4
+SELECT DISTINCT T.Name AS TeacherName, T.Surname AS TeacherSurname
+FROM Teachers T
+JOIN Lectures L ON T.Id = L.TeacherId
+JOIN GroupsLectures GL ON L.Id = GL.LectureId
+JOIN Groups G ON GL.GroupId = G.Id
+WHERE G.Name = 'P107';
+--5
+SELECT T.Surname AS TeacherSurname, F.Name AS FacultyName
+FROM Teachers T
+JOIN Lectures L ON T.Id = L.TeacherId
+JOIN Subjects S ON L.SubjectId = S.Id
+JOIN Departments D ON S.Id = D.Id
+JOIN Faculties F ON D.FacultyId = F.Id;
+--6
+SELECT D.Name AS DepartmentName, G.Name AS GroupName
+FROM Departments D
+JOIN Groups G ON D.Id = G.DepartmentId;
+--7
+SELECT S.Name AS SubjectName
+FROM Subjects S
+JOIN Lectures L ON S.Id = L.SubjectId
+JOIN Teachers T ON L.TeacherId = T.Id
+WHERE T.Name = 'Samantha' AND T.Surname = 'Adams';
+--8
+SELECT D.Name AS DepartmentName
+FROM Departments D
+JOIN Lectures L ON D.Id = L.SubjectId
+JOIN Subjects S ON L.SubjectId = S.Id
+WHERE S.Name = 'Database Theory';
+--9
+SELECT G.Name AS GroupName
+FROM Groups G
+JOIN Departments D ON G.DepartmentId = D.Id
+JOIN Faculties F ON D.FacultyId = F.Id
+WHERE F.Name = 'Computer Science';
+--10
+SELECT G.Name AS GroupName, F.Name AS FacultyName
+FROM Groups G
+JOIN Departments D ON G.DepartmentId = D.Id
+JOIN Faculties F ON D.FacultyId = F.Id
+WHERE G.Year = 5;
+--11
+SELECT T.Name + ' ' + T.Surname AS FullName, S.Name AS SubjectName, G.Name AS GroupName
+FROM Teachers T
+JOIN Lectures L ON T.Id = L.TeacherId
+JOIN Subjects S ON L.SubjectId = S.Id
+JOIN GroupsLectures GL ON L.Id = GL.LectureId
+JOIN Groups G ON GL.GroupId = G.Id
+WHERE L.LectureRoom = 'B103';
