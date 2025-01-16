@@ -1,0 +1,313 @@
+CREATE TABLE groups(
+  id int primary key identity(1,1),
+  title varchar(15)
+);
+
+CREATE TABLE teachers(
+  id int primary key identity(1,1),
+  first_name varchar(15),
+  second_name varchar(15),
+  subject varchar(15),
+  group_id int,
+  foreign KEY (group_id) references groups(id)
+);
+
+CREATE TABLE students(
+  id int primary key identity(1,1),
+  first_name varchar(15),
+  second_name varchar(15),
+  group_id int,
+  foreign key (group_id) references groups(id)
+);
+
+CREATE TABLE grades(
+  id int primary key identity(1,1),
+  student_id int,
+  teacher_id int,
+  rating int,
+  foreign key (student_id) references students(id),
+  foreign key (teacher_id) references teachers(id)
+);
+
+INSERT INTO groups (title) VALUES
+('AAB-31'),
+('GGW-15'),
+('TAQ-11'),
+('VBN-27'),
+('YUF-41'),
+('FFC-35');
+
+INSERT INTO teachers (first_name, second_name, subject, group_id) VALUES
+('John', 'Smith', 'Math', 1),
+('Emily', 'Johnson', 'Physics', 2),
+('Michael', 'Williams', 'Chemistry', 1),
+('Sarah', 'Brown', 'Biology', 3),
+('David', 'Jones', 'History', 4),
+('Laura', 'Garcia', 'Literature', 5),
+('James', 'Martinez', 'Geography', 2);
+
+INSERT INTO students (first_name, second_name, group_id) VALUES
+('Alice', 'Smith', 1),
+('Bob', 'Johnson', 1),
+('Charlie', 'Williams', 2),
+('Daisy', 'Brown', 2),
+('Ethan', 'Jones', 3),
+('Fiona', 'Garcia', 3),
+('George', 'Martinez', 4),
+('Hannah', 'Hernandez', 4),
+('Ian', 'Lopez', 5),
+('Julia', 'Gonzalez', 5),
+('Emily', 'Smith', 2);
+
+INSERT INTO grades (student_id, teacher_id, rating) VALUES
+(1, 1, 9),  -- Alice Smith, Math, John Smith
+(2, 1, 8),  -- Bob Johnson, Math, John Smith
+(3, 2, 7),  -- Charlie Williams, Physics, Emily Johnson
+(4, 2, 6),  -- Daisy Brown, Physics, Emily Johnson
+(5, 3, 10), -- Ethan Jones, Chemistry, Michael Williams
+(6, 3, 9),  -- Fiona Garcia, Chemistry, Michael Williams
+(7, 4, 8),  -- George Martinez, History, David Jones
+(8, 4, 7),  -- Hannah Hernandez, History, David Jones
+(9, 5, 10), -- Ian Lopez, Literature, Laura Garcia
+(10, 5, 9), -- Julia Gonzalez, Literature, Laura Garcia
+(1, 3, 8),  -- Alice Smith, Chemistry, Michael Williams
+(2, 4, 7),  -- Bob Johnson, Biology, Sarah Brown
+(3, 5, 9),  -- Charlie Williams, Literature, Laura Garcia
+(4, 6, 6),  -- Daisy Brown, Geography, James Martinez
+(5, 2, 8),  -- Ethan Jones, Physics, Emily Johnson
+(6, 1, 10), -- Fiona Garcia, Math, John Smith
+(7, 3, 7),  -- George Martinez, Chemistry, Michael Williams
+(8, 5, 9),  -- Hannah Hernandez, Literature, Laura Garcia
+(9, 2, 8),  -- Ian Lopez, Physics, Emily Johnson
+(10, 4, 10); -- Julia Gonzalez, Biology, Sarah Brown
+
+SELECT first_name +' '+ second_name AS Student, groups.title as [Group] FROM students, groups; -- Неправильный запрос
+
+SELECT first_name +' '+ second_name AS Student, groups.title as [Group] FROM students, groups  -- Правильный запрос
+WHERE group_id = groups.id;
+
+SELECT first_name +' '+ second_name AS Student, groups.title as [Group], teachers.subject as Subject
+FROM students, groups, teachers
+WHERE group_id = groups.id AND teachers.group_id = groups.id; -- Неправильный запрос
+
+SELECT students.first_name +' '+ students.second_name AS Student, groups.title as [Group], teachers.subject as Subject
+FROM students, groups, teachers
+WHERE students.group_id = groups.id AND teachers.group_id = groups.id; -- Неправильный запрос
+
+SELECT students.first_name + ' ' + students.second_name AS Student, groups.title AS [Group], 
+STRING_AGG(teachers.subject, ', ') AS Subjects
+FROM students, groups, teachers
+WHERE students.group_id = groups.id AND teachers.group_id = groups.id
+GROUP BY students.first_name, students.second_name, groups.title;
+
+SELECT count(*) AS [Number of students] FROM students
+
+SELECT avg(rating) AS [Average rating] FROM grades; -- Получить средний балл среди всех оценок
+SELECT avg(rating) AS [Average rating] FROM grades WHERE teacher_id = 1; -- Получить средний балл учителя
+SELECT avg(rating) AS [Average rating] FROM grades WHERE student_id = 3;
+SELECT first_name + ' '+ second_name AS Student,
+    (SELECT AVG(rating) 
+     FROM grades 
+     WHERE student_id = students.id) AS [Average rating]
+FROM students;
+
+SELECT sum(rating) AS [Overall rating] FROM grades WHERE student_id = 3;
+SELECT min(rating) AS [Minimum rating] FROM grades WHERE student_id = 3;
+SELECT max(rating) AS [Maximum rating] FROM grades WHERE student_id = 3;
+
+SELECT first_name + ' ' + second_name AS Student, avg(rating)
+FROM students, grades
+WHERE students.id = grades.student_id
+GROUP BY first_name, second_name
+HAVING avg(rating) > 5
+ORDER BY first_name;
+
+SELECT count(student_id) as [Number of students]
+FROM grades
+HAVING max(rating) > 7;
+
+SELECT first_name + ' ' + second_name AS Student
+FROM students
+GROUP BY first_name, second_name, id
+HAVING id IN (
+  SELECT student_id FROM grades
+  WHERE teacher_id = 1
+);
+
+SELECT first_name + ' ' + second_name AS Student
+FROM students
+WHERE EXISTS (
+  SELECT * FROM grades
+  WHERE grades.student_id = students.id
+);
+
+SELECT first_name + ' ' + second_name AS Student
+FROM students
+WHERE NOT EXISTS (
+  SELECT * FROM grades
+  WHERE grades.student_id = students.id
+);
+
+SELECT first_name + ' ' + second_name AS Student
+FROM students
+WHERE id = ANY (
+  SELECT student_id FROM grades
+  WHERE teacher_id = 1
+)
+GROUP BY first_name, second_name, id;
+
+SELECT first_name + ' ' + second_name AS Name, 'Student' AS Role
+FROM students
+UNION
+SELECT first_name + ' ' + second_name AS Name, 'Teacher' AS role
+FROM teachers;
+
+-- Все студенты с оценками и учителями, выдавшими оценку
+SELECT students.first_name + ' ' + students.second_name AS Student,
+teachers.first_name + ' ' + teachers.second_name AS Teacher, grades.rating
+FROM students
+INNER JOIN grades ON students.id = grades.student_id
+INNER JOIN teachers ON grades.teacher_id = teachers.id;
+    
+-- Все студенты и их оценки (даже если оценок нет)
+SELECT students.first_name + ' ' + students.second_name AS Student,
+grades.rating
+FROM students
+LEFT JOIN grades ON students.id = grades.student_id;
+
+-- Все учителя и их оценки (даже если оценок нет)
+SELECT teachers.first_name + ' ' + teachers.second_name AS Teacher,
+students.first_name + ' ' + students.second_name AS Student, grades.rating
+FROM teachers
+RIGHT JOIN grades ON teachers.id = grades.teacher_id
+LEFT JOIN students ON grades.student_id = students.id;
+    
+-- Все группы и студенты (даже если студентов нет)
+SELECT groups.title,
+students.first_name + ' ' + students.second_name AS Student
+FROM groups
+LEFT JOIN students ON groups.id = students.group_id;
+
+-- Все студенты с оценками выше 8 и учителя
+SELECT students.first_name + ' ' + students.second_name AS Student,
+teachers.first_name + ' ' + teachers.second_name AS Teacher, grades.rating
+FROM students
+INNER JOIN grades ON students.id = grades.student_id
+INNER JOIN teachers ON grades.teacher_id = teachers.id
+WHERE grades.rating > 8;
+
+-- Все студенты и все учителя, даже если они не связаны
+SELECT students.first_name + ' ' + students.second_name AS Student,
+teachers.first_name + ' ' + teachers.second_name AS Teacher, grades.rating
+FROM students
+FULL JOIN grades ON students.id = grades.student_id
+FULL JOIN teachers ON grades.teacher_id = teachers.id;
+
+-- Поиск одногруппников
+SELECT s1.first_name + ' ' + s1.second_name AS Student,
+s2.first_name + ' ' + s2.second_name AS Classmate
+FROM students s1
+INNER JOIN students s2 ON s1.group_id = s2.group_id AND s1.id <> s2.id;
+
+-- То же самое, но красивый вывод
+SELECT s1.first_name + ' ' + s1.second_name AS Student,
+STRING_AGG(s2.first_name + ' ' + s2.second_name, ', ') AS Classmates
+FROM students s1
+INNER JOIN students s2 ON s1.group_id = s2.group_id AND s1.id <> s2.id
+GROUP BY s1.first_name, s1.second_name;
+
+CREATE TRIGGER trg_update_student_group
+ON groups
+AFTER DELETE
+AS
+BEGIN
+    UPDATE students
+    SET group_id = NULL
+    WHERE group_id IN (SELECT id FROM deleted);
+END;
+
+CREATE TRIGGER trg_unique_teacher
+ON teachers
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM teachers t
+        JOIN inserted i ON t.first_name = i.first_name AND t.second_name = i.second_name
+        WHERE t.id <> i.id
+    )
+    BEGIN
+        RAISERROR('', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+
+CREATE PROCEDURE AddStudent
+    @FirstName VARCHAR(15),
+    @SecondName VARCHAR(15),
+    @GroupId INT
+AS
+BEGIN
+    INSERT INTO students (first_name, second_name, group_id)
+    VALUES (@FirstName, @SecondName, @GroupId);
+END;
+
+CREATE PROCEDURE UpdateGrade
+    @StudentId INT,
+    @TeacherId INT,
+    @NewRating INT
+AS
+BEGIN
+    UPDATE grades
+    SET rating = @NewRating
+    WHERE student_id = @StudentId AND teacher_id = @TeacherId;
+END;
+
+CREATE PROCEDURE GetAverageGrade
+    @StudentId INT
+AS
+BEGIN
+    SELECT AVG(rating) AS AverageGrade
+    FROM grades
+    WHERE student_id = @StudentId;
+END;
+
+CREATE FUNCTION GetFullName(@StudentId INT)
+RETURNS VARCHAR(30)
+AS
+BEGIN
+    DECLARE @FullName VARCHAR(30);
+    
+    SELECT @FullName = CONCAT(first_name, ' ', second_name)
+    FROM students
+    WHERE id = @StudentId;
+    
+    RETURN @FullName;
+END;
+
+CREATE FUNCTION CountStudentsInGroup(@GroupId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @Count INT;
+    
+    SELECT @Count = COUNT(*)
+    FROM students
+    WHERE group_id = @GroupId;
+    
+    RETURN @Count;
+END;
+
+CREATE FUNCTION GetMaxGrade(@StudentId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @MaxGrade INT;
+    
+    SELECT @MaxGrade = MAX(rating)
+    FROM grades
+    WHERE student_id = @StudentId;
+    
+    RETURN @MaxGrade;
+END;
